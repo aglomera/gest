@@ -1,0 +1,1225 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Caixa do Dia</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+  :root {
+    --bg: #0d0d0f;
+    --surface: #16161a;
+    --surface2: #1e1e24;
+    --border: #2a2a35;
+    --accent: #00e5a0;
+    --accent2: #6c63ff;
+    --pix: #00b4d8;
+    --card: #5e60ce;
+    --cash: #2ec4b6;
+    --danger: #ff6b6b;
+    --text: #f0f0f5;
+    --muted: #7c7c8a;
+    --mono: 'DM Mono', monospace;
+    --sans: 'Syne', sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    min-height: 100vh;
+    padding-bottom: 100px;
+  }
+
+  /* HEADER */
+  .header {
+    background: linear-gradient(135deg, #16161a 0%, #1a1a2e 100%);
+    padding: 20px 16px 16px;
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .header-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 4px;
+  }
+  .header h1 {
+    font-size: 20px;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+    color: var(--accent);
+  }
+  .date-badge {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    background: var(--surface2);
+    padding: 4px 8px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+  }
+  .total-header {
+    font-family: var(--mono);
+    font-size: 28px;
+    font-weight: 500;
+    color: var(--text);
+    letter-spacing: -1px;
+  }
+  .total-header span {
+    font-size: 14px;
+    color: var(--muted);
+    font-weight: 400;
+  }
+
+  /* TOTALS ROW */
+  .totals-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 8px;
+    padding: 12px 16px;
+  }
+  .total-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 10px 10px 8px;
+    position: relative;
+    overflow: hidden;
+  }
+  .total-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+  }
+  .total-card.cash::before { background: var(--cash); }
+  .total-card.card::before { background: var(--card); }
+  .total-card.pix::before { background: var(--pix); }
+  .total-card label {
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    display: block;
+    margin-bottom: 4px;
+  }
+  .total-card.cash label { color: var(--cash); }
+  .total-card.card label { color: var(--card); }
+  .total-card.pix label { color: var(--pix); }
+  .total-card .val {
+    font-family: var(--mono);
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--text);
+  }
+  .total-card .count {
+    font-size: 10px;
+    color: var(--muted);
+    font-family: var(--mono);
+  }
+
+  /* TABS */
+  .tabs {
+    display: flex;
+    gap: 4px;
+    padding: 0 16px 12px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .tabs::-webkit-scrollbar { display: none; }
+  .tab-btn {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--muted);
+    padding: 7px 14px;
+    border-radius: 20px;
+    font-family: var(--sans);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all .2s;
+    flex-shrink: 0;
+  }
+  .tab-btn.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #000;
+  }
+
+  /* SECTIONS */
+  .section { padding: 0 16px; display: none; }
+  .section.active { display: block; }
+
+  /* ADD SALE FORM */
+  .add-form {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 16px;
+    margin-bottom: 16px;
+  }
+  .form-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 12px;
+  }
+  .payment-selector {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 6px;
+    margin-bottom: 12px;
+  }
+  .pay-btn {
+    padding: 10px 4px;
+    border-radius: 10px;
+    border: 1.5px solid var(--border);
+    background: var(--surface2);
+    color: var(--muted);
+    font-family: var(--sans);
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+    text-align: center;
+    transition: all .2s;
+  }
+  .pay-btn.selected.cash { border-color: var(--cash); color: var(--cash); background: rgba(46,196,182,.12); }
+  .pay-btn.selected.card { border-color: var(--card); color: var(--card); background: rgba(94,96,206,.12); }
+  .pay-btn.selected.pix  { border-color: var(--pix);  color: var(--pix);  background: rgba(0,180,216,.12); }
+  .input-row {
+    display: flex;
+    gap: 8px;
+    align-items: stretch;
+  }
+  .val-input {
+    flex: 1;
+    background: var(--surface2);
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 20px;
+    padding: 10px 12px;
+    outline: none;
+    transition: border-color .2s;
+  }
+  .val-input:focus { border-color: var(--accent); }
+  .val-input::placeholder { color: var(--muted); font-size: 16px; }
+  .add-btn {
+    background: var(--accent);
+    border: none;
+    border-radius: 10px;
+    color: #000;
+    font-family: var(--sans);
+    font-size: 13px;
+    font-weight: 800;
+    padding: 0 18px;
+    cursor: pointer;
+    transition: opacity .2s;
+    letter-spacing: 0.5px;
+  }
+  .add-btn:active { opacity: 0.8; }
+
+  /* SALES LIST */
+  .sales-list { display: flex; flex-direction: column; gap: 6px; }
+  .sale-item {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 12px 14px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    animation: slideIn .2s ease;
+  }
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateY(-8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .sale-left { display: flex; align-items: center; gap: 10px; }
+  .sale-type {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    flex-shrink: 0;
+  }
+  .sale-type.cash { background: rgba(46,196,182,.15); }
+  .sale-type.card { background: rgba(94,96,206,.15); }
+  .sale-type.pix  { background: rgba(0,180,216,.15); }
+  .sale-info {}
+  .sale-method {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: .8px;
+    text-transform: uppercase;
+  }
+  .sale-method.cash { color: var(--cash); }
+  .sale-method.card { color: var(--card); }
+  .sale-method.pix  { color: var(--pix); }
+  .sale-time {
+    font-size: 11px;
+    color: var(--muted);
+    font-family: var(--mono);
+  }
+  .sale-right { display: flex; align-items: center; gap: 8px; }
+  .sale-value {
+    font-family: var(--mono);
+    font-size: 16px;
+    font-weight: 500;
+    color: var(--text);
+  }
+  .del-btn {
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    width: 26px;
+    height: 26px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all .2s;
+  }
+  .del-btn:hover { border-color: var(--danger); color: var(--danger); }
+
+  /* EMPTY */
+  .empty-state {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--muted);
+  }
+  .empty-state .icon { font-size: 36px; margin-bottom: 8px; }
+  .empty-state p { font-size: 13px; }
+
+  /* PIX SECTION */
+  .pix-form {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 16px;
+    margin-bottom: 16px;
+  }
+  .pix-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+  .pix-field {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .pix-field label {
+    font-size: 11px;
+    color: var(--muted);
+    font-weight: 700;
+    letter-spacing: .5px;
+  }
+  .pix-input {
+    background: var(--surface2);
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 14px;
+    padding: 10px 12px;
+    outline: none;
+    width: 100%;
+    transition: border-color .2s;
+  }
+  .pix-input:focus { border-color: var(--pix); }
+
+  .quick-values {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-bottom: 12px;
+  }
+  .quick-val {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    color: var(--muted);
+    font-family: var(--mono);
+    font-size: 12px;
+    padding: 5px 12px;
+    cursor: pointer;
+    transition: all .2s;
+  }
+  .quick-val:hover { border-color: var(--pix); color: var(--pix); }
+  .quick-val.pix-auto {
+    border-color: var(--pix);
+    color: var(--pix);
+    background: rgba(0,180,216,.1);
+    font-weight: 600;
+  }
+
+  .gen-pix-btn {
+    width: 100%;
+    background: linear-gradient(135deg, var(--pix), #0077b6);
+    border: none;
+    border-radius: 12px;
+    color: #fff;
+    font-family: var(--sans);
+    font-size: 14px;
+    font-weight: 800;
+    padding: 14px;
+    cursor: pointer;
+    letter-spacing: .5px;
+    transition: opacity .2s;
+  }
+  .gen-pix-btn:active { opacity: 0.85; }
+
+  /* QR RESULT */
+  .qr-result {
+    background: var(--surface);
+    border: 1px solid var(--pix);
+    border-radius: 16px;
+    padding: 20px 16px;
+    text-align: center;
+    margin-bottom: 16px;
+    display: none;
+  }
+  .qr-result.visible { display: block; animation: slideIn .3s ease; }
+  .qr-value-display {
+    font-family: var(--mono);
+    font-size: 26px;
+    font-weight: 500;
+    color: var(--pix);
+    margin-bottom: 4px;
+  }
+  .qr-label {
+    font-size: 11px;
+    color: var(--muted);
+    margin-bottom: 16px;
+    font-family: var(--mono);
+  }
+  #qrcode-container {
+    display: inline-block;
+    background: #fff;
+    padding: 12px;
+    border-radius: 12px;
+    margin-bottom: 12px;
+  }
+  .pix-code-box {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 12px;
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--muted);
+    word-break: break-all;
+    text-align: left;
+    margin-bottom: 10px;
+    max-height: 60px;
+    overflow: hidden;
+    position: relative;
+  }
+  .copy-btn {
+    width: 100%;
+    background: var(--surface2);
+    border: 1.5px solid var(--pix);
+    border-radius: 10px;
+    color: var(--pix);
+    font-family: var(--sans);
+    font-size: 13px;
+    font-weight: 700;
+    padding: 10px;
+    cursor: pointer;
+    transition: all .2s;
+  }
+  .copy-btn:active { background: rgba(0,180,216,.15); }
+  .add-to-sales-btn {
+    width: 100%;
+    background: none;
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    color: var(--muted);
+    font-family: var(--sans);
+    font-size: 13px;
+    font-weight: 600;
+    padding: 10px;
+    cursor: pointer;
+    margin-top: 6px;
+    transition: all .2s;
+  }
+  .add-to-sales-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* FECHAMENTO */
+  .fechamento-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 16px;
+    margin-bottom: 12px;
+  }
+  .fech-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .fech-row:last-child { border-bottom: none; }
+  .fech-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    font-weight: 700;
+  }
+  .dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .dot.cash { background: var(--cash); }
+  .dot.card { background: var(--card); }
+  .dot.pix  { background: var(--pix); }
+  .dot.total { background: var(--accent); }
+  .fech-val {
+    font-family: var(--mono);
+    font-size: 18px;
+    font-weight: 500;
+  }
+  .fech-val.total { color: var(--accent); font-size: 24px; font-weight: 500; }
+
+  .export-btn {
+    width: 100%;
+    background: var(--surface2);
+    border: 1.5px solid var(--accent);
+    border-radius: 12px;
+    color: var(--accent);
+    font-family: var(--sans);
+    font-size: 13px;
+    font-weight: 800;
+    padding: 14px;
+    cursor: pointer;
+    letter-spacing: .5px;
+    transition: all .2s;
+    margin-bottom: 8px;
+  }
+  .export-btn:active { background: rgba(0,229,160,.1); }
+  .clear-btn {
+    width: 100%;
+    background: none;
+    border: 1.5px solid var(--border);
+    border-radius: 12px;
+    color: var(--muted);
+    font-family: var(--sans);
+    font-size: 13px;
+    font-weight: 600;
+    padding: 12px;
+    cursor: pointer;
+    transition: all .2s;
+  }
+  .clear-btn:hover { border-color: var(--danger); color: var(--danger); }
+
+  /* SAÍDAS */
+  .saidas-section {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 16px;
+    margin-bottom: 12px;
+  }
+  .saida-total {
+    text-align: center;
+    padding: 8px 0 4px;
+    border-top: 1px solid var(--border);
+    margin-top: 8px;
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--danger);
+  }
+
+  /* CONFIRM MODAL */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.7);
+    z-index: 200;
+    display: none;
+    align-items: flex-end;
+    justify-content: center;
+    padding: 0;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px 20px 0 0;
+    padding: 24px 20px 36px;
+    width: 100%;
+    max-width: 500px;
+    animation: slideUp .25s ease;
+  }
+  @keyframes slideUp {
+    from { transform: translateY(100%); }
+    to { transform: translateY(0); }
+  }
+  .modal h3 { font-size: 18px; font-weight: 800; margin-bottom: 8px; }
+  .modal p { font-size: 13px; color: var(--muted); margin-bottom: 20px; line-height: 1.5; }
+  .modal-btns { display: flex; gap: 8px; }
+  .modal-btns button {
+    flex: 1;
+    padding: 13px;
+    border-radius: 12px;
+    font-family: var(--sans);
+    font-weight: 700;
+    font-size: 14px;
+    cursor: pointer;
+    border: none;
+  }
+  .modal-cancel { background: var(--surface2); color: var(--muted); border: 1px solid var(--border) !important; }
+  .modal-confirm { background: var(--danger); color: #fff; }
+
+  /* TOAST */
+  .toast {
+    position: fixed;
+    bottom: 80px;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: var(--accent);
+    color: #000;
+    font-family: var(--sans);
+    font-weight: 700;
+    font-size: 13px;
+    padding: 10px 20px;
+    border-radius: 20px;
+    opacity: 0;
+    transition: all .3s;
+    z-index: 300;
+    pointer-events: none;
+    white-space: nowrap;
+  }
+  .toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+
+  /* BOTTOM NAV */
+  .bottom-nav {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    display: flex;
+    z-index: 100;
+  }
+  .nav-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 10px 0 12px;
+    cursor: pointer;
+    font-family: var(--sans);
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--muted);
+    transition: color .2s;
+    gap: 3px;
+    border: none;
+    background: none;
+  }
+  .nav-item.active { color: var(--accent); }
+  .nav-icon { font-size: 20px; line-height: 1; }
+
+  /* SECTION TITLE */
+  .section-title {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 10px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-top">
+    <h1>💰 Caixa do Dia</h1>
+    <div class="date-badge" id="dateBadge"></div>
+  </div>
+  <div class="total-header"><span>Total </span><span id="headerTotal">R$ 0,00</span></div>
+</div>
+
+<div class="totals-row">
+  <div class="total-card cash">
+    <label>Dinheiro</label>
+    <div class="val" id="totalCash">R$ 0,00</div>
+    <div class="count" id="countCash">0 vendas</div>
+  </div>
+  <div class="total-card card">
+    <label>Cartão</label>
+    <div class="val" id="totalCard">R$ 0,00</div>
+    <div class="count" id="countCard">0 vendas</div>
+  </div>
+  <div class="total-card pix">
+    <label>Pix</label>
+    <div class="val" id="totalPix">R$ 0,00</div>
+    <div class="count" id="countPix">0 vendas</div>
+  </div>
+</div>
+
+<div class="tabs">
+  <button class="tab-btn active" onclick="switchTab('vendas', this)">📋 Vendas</button>
+  <button class="tab-btn" onclick="switchTab('pix', this)">⚡ Gerar Pix</button>
+  <button class="tab-btn" onclick="switchTab('saidas', this)">📤 Saídas</button>
+  <button class="tab-btn" onclick="switchTab('fechamento', this)">📊 Fechamento</button>
+</div>
+
+<!-- TAB VENDAS -->
+<div class="section active" id="tab-vendas">
+  <div class="add-form">
+    <div class="form-title">Nova Venda</div>
+    <div class="payment-selector">
+      <button class="pay-btn cash selected" onclick="selectPay('cash', this)">💵 Dinheiro</button>
+      <button class="pay-btn card" onclick="selectPay('card', this)">💳 Cartão</button>
+      <button class="pay-btn pix"  onclick="selectPay('pix', this)">⚡ Pix</button>
+    </div>
+    <div class="input-row">
+      <input class="val-input" type="number" id="saleInput" placeholder="0,00" step="0.01" min="0" inputmode="decimal">
+      <button class="add-btn" onclick="addSale()">+ ADD</button>
+    </div>
+  </div>
+
+  <div class="section-title">Lançamentos de hoje</div>
+  <div class="sales-list" id="salesList">
+    <div class="empty-state">
+      <div class="icon">🛒</div>
+      <p>Nenhuma venda ainda.<br>Adicione a primeira acima!</p>
+    </div>
+  </div>
+</div>
+
+<!-- TAB PIX -->
+<div class="section" id="tab-pix">
+  <div class="pix-form">
+    <div class="form-title">Configurar Cobrança Pix</div>
+    <div class="pix-grid">
+      <div class="pix-field">
+        <label>CHAVE PIX (CPF, e-mail, telefone ou aleatória)</label>
+        <input class="pix-input" type="text" id="pixKey" placeholder="sua@chave.pix">
+      </div>
+      <div class="pix-field">
+        <label>NOME DO RECEBEDOR</label>
+        <input class="pix-input" type="text" id="pixName" placeholder="Seu Nome">
+      </div>
+      <div class="pix-field">
+        <label>CIDADE</label>
+        <input class="pix-input" type="text" id="pixCity" placeholder="Sua Cidade">
+      </div>
+      <div class="pix-field">
+        <label>VALOR (R$)</label>
+        <input class="pix-input" type="number" id="pixAmount" placeholder="0,00" step="0.01" min="0" inputmode="decimal">
+      </div>
+    </div>
+
+    <div id="quickValuesContainer" style="display:none;">
+      <div style="font-size:11px;color:var(--muted);margin-bottom:6px;font-weight:700;">VALORES RÁPIDOS (vendas Pix do dia):</div>
+      <div class="quick-values" id="quickValues"></div>
+    </div>
+
+    <button class="gen-pix-btn" onclick="generatePix()">⚡ Gerar QR Code Pix</button>
+  </div>
+
+  <div class="qr-result" id="qrResult">
+    <div class="qr-value-display" id="qrValueDisplay">R$ 0,00</div>
+    <div class="qr-label" id="qrLabelDisplay">Escaneie para pagar</div>
+    <div id="qrcode-container"><div id="qrcode"></div></div>
+    <div class="pix-code-box" id="pixCodeBox"></div>
+    <button class="copy-btn" onclick="copyPixCode()">📋 Copiar código Pix</button>
+    <button class="add-to-sales-btn" onclick="addPixToSales()">+ Registrar esta venda</button>
+  </div>
+</div>
+
+<!-- TAB SAÍDAS -->
+<div class="section" id="tab-saidas">
+  <div class="saidas-section">
+    <div class="form-title">Registrar Saída</div>
+    <div class="pix-field" style="margin-bottom:10px;">
+      <label>DESCRIÇÃO</label>
+      <input class="pix-input" type="text" id="saidaDesc" placeholder="Ex: troco, despesa, retirada...">
+    </div>
+    <div class="input-row">
+      <input class="val-input" type="number" id="saidaVal" placeholder="0,00" step="0.01" min="0" inputmode="decimal">
+      <button class="add-btn" style="background:var(--danger);" onclick="addSaida()">− ADD</button>
+    </div>
+    <div class="saida-total" id="saidaTotal">Total de saídas: R$ 0,00</div>
+  </div>
+
+  <div class="section-title">Saídas registradas</div>
+  <div class="sales-list" id="saidasList">
+    <div class="empty-state">
+      <div class="icon">📤</div>
+      <p>Nenhuma saída registrada.</p>
+    </div>
+  </div>
+</div>
+
+<!-- TAB FECHAMENTO -->
+<div class="section" id="tab-fechamento">
+  <div class="fechamento-card">
+    <div class="fech-row">
+      <div class="fech-label"><div class="dot cash"></div>Dinheiro</div>
+      <div class="fech-val" id="fechCash">R$ 0,00</div>
+    </div>
+    <div class="fech-row">
+      <div class="fech-label"><div class="dot card"></div>Cartão</div>
+      <div class="fech-val" id="fechCard">R$ 0,00</div>
+    </div>
+    <div class="fech-row">
+      <div class="fech-label"><div class="dot pix"></div>Pix</div>
+      <div class="fech-val" id="fechPix">R$ 0,00</div>
+    </div>
+    <div class="fech-row">
+      <div class="fech-label"><span style="color:var(--danger)">📤</span> Saídas</div>
+      <div class="fech-val" style="color:var(--danger)" id="fechSaidas">− R$ 0,00</div>
+    </div>
+    <div class="fech-row">
+      <div class="fech-label"><div class="dot total"></div><strong>TOTAL LÍQUIDO</strong></div>
+      <div class="fech-val total" id="fechTotal">R$ 0,00</div>
+    </div>
+  </div>
+
+  <button class="export-btn" onclick="exportTxt()">📄 Exportar Resumo do Dia</button>
+  <button class="clear-btn" onclick="openClearModal()">🗑 Zerar caixa</button>
+</div>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <h3>Zerar o caixa?</h3>
+    <p>Todos os lançamentos de hoje serão apagados. Esta ação não pode ser desfeita.</p>
+    <div class="modal-btns">
+      <button class="modal-cancel" onclick="closeModal()">Cancelar</button>
+      <button class="modal-confirm" onclick="clearAll()">Zerar tudo</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- BOTTOM NAV -->
+<div class="bottom-nav">
+  <button class="nav-item active" onclick="switchTab('vendas', null, this)">
+    <span class="nav-icon">📋</span>Vendas
+  </button>
+  <button class="nav-item" onclick="switchTab('pix', null, this)">
+    <span class="nav-icon">⚡</span>Pix
+  </button>
+  <button class="nav-item" onclick="switchTab('saidas', null, this)">
+    <span class="nav-icon">📤</span>Saídas
+  </button>
+  <button class="nav-item" onclick="switchTab('fechamento', null, this)">
+    <span class="nav-icon">📊</span>Fechamento
+  </button>
+</div>
+
+<script>
+// ---- STATE ----
+let sales = JSON.parse(localStorage.getItem('sales') || '[]');
+let saidas = JSON.parse(localStorage.getItem('saidas') || '[]');
+let selectedPay = 'cash';
+let currentPixCode = '';
+let currentPixAmount = 0;
+
+// ---- UTILS ----
+const fmt = v => 'R$ ' + parseFloat(v).toFixed(2).replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+const now = () => new Date().toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'});
+const save = () => {
+  localStorage.setItem('sales', JSON.stringify(sales));
+  localStorage.setItem('saidas', JSON.stringify(saidas));
+};
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2000);
+}
+
+// ---- DATE ----
+function setDate() {
+  const d = new Date();
+  document.getElementById('dateBadge').textContent =
+    d.toLocaleDateString('pt-BR', {day:'2-digit', month:'2-digit', year:'numeric'});
+}
+setDate();
+
+// ---- TABS ----
+const tabBtns = document.querySelectorAll('.tab-btn');
+const navItems = document.querySelectorAll('.nav-item');
+
+function switchTab(name, tabEl, navEl) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+
+  tabBtns.forEach(b => b.classList.remove('active'));
+  navItems.forEach(n => n.classList.remove('active'));
+
+  if (tabEl) tabEl.classList.add('active');
+  if (navEl) navEl.classList.add('active');
+
+  // sync both nav and tab
+  const idx = ['vendas','pix','saidas','fechamento'].indexOf(name);
+  if (idx >= 0) {
+    tabBtns[idx]?.classList.add('active');
+    navItems[idx]?.classList.add('active');
+  }
+
+  if (name === 'pix') updateQuickValues();
+  if (name === 'fechamento') updateFechamento();
+}
+
+// ---- PAYMENT SELECT ----
+function selectPay(type, el) {
+  selectedPay = type;
+  document.querySelectorAll('.pay-btn').forEach(b => b.classList.remove('selected'));
+  el.classList.add('selected');
+}
+
+// ---- ADD SALE ----
+function addSale(amount, method) {
+  const val = amount || parseFloat(document.getElementById('saleInput').value);
+  const m = method || selectedPay;
+  if (!val || val <= 0) { showToast('⚠️ Informe um valor válido'); return; }
+  sales.push({ id: Date.now(), val, method: m, time: now() });
+  save();
+  renderSales();
+  updateTotals();
+  if (!amount) document.getElementById('saleInput').value = '';
+  showToast('✅ Venda adicionada!');
+}
+
+// ---- RENDER SALES ----
+const methodLabels = { cash: '💵 Dinheiro', card: '💳 Cartão', pix: '⚡ Pix' };
+const methodEmoji  = { cash: '💵', card: '💳', pix: '⚡' };
+
+function renderSales() {
+  const list = document.getElementById('salesList');
+  if (!sales.length) {
+    list.innerHTML = `<div class="empty-state"><div class="icon">🛒</div><p>Nenhuma venda ainda.<br>Adicione a primeira acima!</p></div>`;
+    return;
+  }
+  list.innerHTML = [...sales].reverse().map(s => `
+    <div class="sale-item" id="sale-${s.id}">
+      <div class="sale-left">
+        <div class="sale-type ${s.method}">${methodEmoji[s.method]}</div>
+        <div class="sale-info">
+          <div class="sale-method ${s.method}">${methodLabels[s.method]}</div>
+          <div class="sale-time">${s.time}</div>
+        </div>
+      </div>
+      <div class="sale-right">
+        <div class="sale-value">${fmt(s.val)}</div>
+        <button class="del-btn" onclick="deleteSale(${s.id})">✕</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function deleteSale(id) {
+  sales = sales.filter(s => s.id !== id);
+  save();
+  renderSales();
+  updateTotals();
+}
+
+// ---- TOTALS ----
+function updateTotals() {
+  const byMethod = (m) => sales.filter(s => s.method === m).reduce((a, s) => a + s.val, 0);
+  const countBy  = (m) => sales.filter(s => s.method === m).length;
+  const cash = byMethod('cash'), card = byMethod('card'), pix = byMethod('pix');
+  const total = cash + card + pix;
+
+  document.getElementById('totalCash').textContent = fmt(cash);
+  document.getElementById('totalCard').textContent = fmt(card);
+  document.getElementById('totalPix').textContent  = fmt(pix);
+  document.getElementById('countCash').textContent = countBy('cash') + ' vendas';
+  document.getElementById('countCard').textContent = countBy('card') + ' vendas';
+  document.getElementById('countPix').textContent  = countBy('pix')  + ' vendas';
+  document.getElementById('headerTotal').textContent = fmt(total);
+}
+
+// ---- SAÍDAS ----
+function addSaida() {
+  const desc = document.getElementById('saidaDesc').value.trim() || 'Saída';
+  const val  = parseFloat(document.getElementById('saidaVal').value);
+  if (!val || val <= 0) { showToast('⚠️ Informe um valor'); return; }
+  saidas.push({ id: Date.now(), desc, val, time: now() });
+  save();
+  renderSaidas();
+  document.getElementById('saidaDesc').value = '';
+  document.getElementById('saidaVal').value = '';
+  showToast('📤 Saída registrada!');
+}
+
+function deleteSaida(id) {
+  saidas = saidas.filter(s => s.id !== id);
+  save();
+  renderSaidas();
+}
+
+function renderSaidas() {
+  const list = document.getElementById('saidasList');
+  const total = saidas.reduce((a, s) => a + s.val, 0);
+  document.getElementById('saidaTotal').textContent = 'Total de saídas: ' + fmt(total);
+  if (!saidas.length) {
+    list.innerHTML = `<div class="empty-state"><div class="icon">📤</div><p>Nenhuma saída registrada.</p></div>`;
+    return;
+  }
+  list.innerHTML = [...saidas].reverse().map(s => `
+    <div class="sale-item" id="saida-${s.id}">
+      <div class="sale-left">
+        <div class="sale-type cash">📤</div>
+        <div class="sale-info">
+          <div class="sale-method" style="color:var(--danger)">${s.desc}</div>
+          <div class="sale-time">${s.time}</div>
+        </div>
+      </div>
+      <div class="sale-right">
+        <div class="sale-value" style="color:var(--danger)">− ${fmt(s.val)}</div>
+        <button class="del-btn" onclick="deleteSaida(${s.id})">✕</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+// ---- FECHAMENTO ----
+function updateFechamento() {
+  const byMethod = (m) => sales.filter(s => s.method === m).reduce((a, s) => a + s.val, 0);
+  const cash = byMethod('cash'), card = byMethod('card'), pix = byMethod('pix');
+  const totalSaidas = saidas.reduce((a, s) => a + s.val, 0);
+  const liquido = cash + card + pix - totalSaidas;
+
+  document.getElementById('fechCash').textContent = fmt(cash);
+  document.getElementById('fechCard').textContent = fmt(card);
+  document.getElementById('fechPix').textContent  = fmt(pix);
+  document.getElementById('fechSaidas').textContent = '− ' + fmt(totalSaidas);
+  document.getElementById('fechTotal').textContent = fmt(liquido);
+}
+
+// ---- PIX QR CODE ----
+function updateQuickValues() {
+  const pixSales = sales.filter(s => s.method === 'pix');
+  const container = document.getElementById('quickValuesContainer');
+  const qv = document.getElementById('quickValues');
+  if (!pixSales.length) { container.style.display = 'none'; return; }
+  container.style.display = 'block';
+  qv.innerHTML = pixSales.map(s => `
+    <button class="quick-val pix-auto" onclick="document.getElementById('pixAmount').value='${s.val.toFixed(2)}'">
+      ${fmt(s.val)}
+    </button>
+  `).join('');
+}
+
+// Gera o payload Pix copia-e-cola (EMV/BR Code)
+function buildPixPayload(key, name, city, amount) {
+  const amtStr = parseFloat(amount).toFixed(2);
+  const cleanName = name.substring(0, 25).normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-zA-Z0-9 ]/g, "").trim();
+  const cleanCity = city.substring(0, 15).normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-zA-Z0-9 ]/g, "").trim();
+  const cleanKey = key.trim();
+
+  function fld(id, val) {
+    const len = val.length.toString().padStart(2, '0');
+    return id + len + val;
+  }
+
+  const merchantAccInfo = fld('00', 'BR.GOV.BCB.PIX') + fld('01', cleanKey);
+  const gui = fld('26', merchantAccInfo);
+  const txAmt = fld('54', amtStr);
+
+  let payload =
+    fld('00', '01') +
+    gui +
+    fld('52', '0000') +
+    fld('53', '986') +
+    txAmt +
+    fld('58', 'BR') +
+    fld('59', cleanName) +
+    fld('60', cleanCity) +
+    fld('62', fld('05', '***'));
+
+  payload += '6304';
+  payload += crc16(payload);
+  return payload;
+}
+
+function crc16(str) {
+  let crc = 0xFFFF;
+  for (let i = 0; i < str.length; i++) {
+    crc ^= str.charCodeAt(i) << 8;
+    for (let j = 0; j < 8; j++) {
+      if (crc & 0x8000) crc = (crc << 1) ^ 0x1021;
+      else crc <<= 1;
+      crc &= 0xFFFF;
+    }
+  }
+  return crc.toString(16).toUpperCase().padStart(4, '0');
+}
+
+function generatePix() {
+  const key    = document.getElementById('pixKey').value.trim();
+  const name   = document.getElementById('pixName').value.trim();
+  const city   = document.getElementById('pixCity').value.trim();
+  const amount = parseFloat(document.getElementById('pixAmount').value);
+
+  if (!key)    { showToast('⚠️ Informe sua chave Pix'); return; }
+  if (!name)   { showToast('⚠️ Informe seu nome'); return; }
+  if (!city)   { showToast('⚠️ Informe sua cidade'); return; }
+  if (!amount || amount <= 0) { showToast('⚠️ Informe o valor'); return; }
+
+  // Salvar configurações
+  localStorage.setItem('pixKey', key);
+  localStorage.setItem('pixName', name);
+  localStorage.setItem('pixCity', city);
+
+  currentPixCode = buildPixPayload(key, name, city, amount);
+  currentPixAmount = amount;
+
+  // QR Code
+  const qrDiv = document.getElementById('qrcode');
+  qrDiv.innerHTML = '';
+  new QRCode(qrDiv, {
+    text: currentPixCode,
+    width: 200,
+    height: 200,
+    colorDark: '#000000',
+    colorLight: '#ffffff',
+    correctLevel: QRCode.CorrectLevel.M
+  });
+
+  document.getElementById('qrValueDisplay').textContent = fmt(amount);
+  document.getElementById('qrLabelDisplay').textContent = name + ' · ' + city;
+  document.getElementById('pixCodeBox').textContent = currentPixCode;
+
+  const result = document.getElementById('qrResult');
+  result.classList.add('visible');
+  result.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function copyPixCode() {
+  if (!currentPixCode) return;
+  navigator.clipboard.writeText(currentPixCode).then(() => {
+    showToast('✅ Código Pix copiado!');
+  }).catch(() => {
+    // fallback
+    const el = document.createElement('textarea');
+    el.value = currentPixCode;
+    document.body.appendChild(el);
+    el.select();
+    document.execCommand('copy');
+    document.body.removeChild(el);
+    showToast('✅ Código Pix copiado!');
+  });
+}
+
+function addPixToSales() {
+  if (!currentPixAmount) return;
+  addSale(currentPixAmount, 'pix');
+  document.getElementById('qrResult').classList.remove('visible');
+  switchTab('vendas', document.querySelectorAll('.tab-btn')[0], document.querySelectorAll('.nav-item')[0]);
+}
+
+// ---- LOAD SAVED PIX CONFIG ----
+function loadPixConfig() {
+  const k = localStorage.getItem('pixKey');
+  const n = localStorage.getItem('pixName');
+  const c = localStorage.getItem('pixCity');
+  if (k) document.getElementById('pixKey').value = k;
+  if (n) document.getElementById('pixName').value = n;
+  if (c) document.getElementById('pixCity').value = c;
+}
+
+// ---- EXPORT ----
+function exportTxt() {
+  const d = new Date().toLocaleDateString('pt-BR');
+  const byMethod = (m) => sales.filter(s => s.method === m).reduce((a, s) => a + s.val, 0);
+  const cash = byMethod('cash'), card = byMethod('card'), pix = byMethod('pix');
+  const totalSaidas = saidas.reduce((a, s) => a + s.val, 0);
+  const total = cash + card + pix;
+  const liquido = total - totalSaidas;
+
+  let txt = `RESUMO DO CAIXA - ${d}\n`;
+  txt += '='.repeat(30) + '\n\n';
+  txt += `DINHEIRO : ${fmt(cash)}\n`;
+  txt += `CARTÃO   : ${fmt(card)}\n`;
+  txt += `PIX      : ${fmt(pix)}\n`;
+  txt += '-'.repeat(30) + '\n';
+  txt += `TOTAL BRUTO : ${fmt(total)}\n`;
+  if (totalSaidas > 0) {
+    txt += `SAÍDAS      : − ${fmt(totalSaidas)}\n`;
+    txt += `TOTAL LÍQ.  : ${fmt(liquido)}\n`;
+  }
+  txt += '\n--- VENDAS ---\n';
+  sales.forEach(s => {
+    txt += `[${s.time}] ${methodLabels[s.method]}: ${fmt(s.val)}\n`;
+  });
+  if (saidas.length) {
+    txt += '\n--- SAÍDAS ---\n';
+    saidas.forEach(s => {
+      txt += `[${s.time}] ${s.desc}: − ${fmt(s.val)}\n`;
+    });
+  }
+
+  const blob = new Blob([txt], { type: 'text/plain' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `caixa-${d.replace(/\//g,'-')}.txt`;
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('📄 Resumo exportado!');
+}
+
+// ---- CLEAR ----
+function openClearModal() { document.getElementById('modalOverlay').classList.add('open'); }
+function closeModal() { document.getElementById('modalOverlay').classList.remove('open'); }
+function clearAll() {
+  sales = []; saidas = [];
+  save();
+  renderSales();
+  renderSaidas();
+  updateTotals();
+  updateFechamento();
+  closeModal();
+  showToast('🗑 Caixa zerado!');
+}
+
+// ---- INIT ----
+renderSales();
+renderSaidas();
+updateTotals();
+loadPixConfig();
+
+// Enter to add sale
+document.getElementById('saleInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') addSale();
+});
+</script>
+</body>
+</html>
